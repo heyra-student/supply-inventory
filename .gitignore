@@ -8,3 +8,7 @@ Thumbs.db
 # Node
 node_modules/
 npm-debug.log*
+
+# 사용자 제외 폴더
+받은자료/
+받은자료
