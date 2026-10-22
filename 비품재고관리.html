@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사내 비품 관리 시스템</title>
+  <!-- Apple Typography Font Stack: SF Pro Display & SF Pro Text fallback to Inter & Pretendard -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', 'Inter', 'Pretendard', 'sans-serif'],
+            body: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', 'Inter', 'Pretendard', 'sans-serif'],
+          },
+          colors: {
+            apple: {
+              primary: '#0066cc',
+              primaryFocus: '#0071e3',
+              primaryOnDark: '#2997ff',
+              ink: '#1d1d1f',
+              body: '#1d1d1f',
+              bodyMuted: '#cccccc',
+              inkMuted80: '#333333',
+              inkMuted48: '#7a7a7a',
+              dividerSoft: '#f0f0f0',
+              hairline: '#d2d2d7',
+              canvas: '#ffffff',
+              canvasParchment: '#f5f5f7',
+              surfacePearl: '#fafafc',
+              surfaceTile1: '#272729',
+              surfaceBlack: '#000000',
+              alertRed: '#d70015',
+              alertOrange: '#b64400',
+              successGreen: '#1b873f',
+            }
+          },
+          borderRadius: {
+            'apple-card': '18px',
+            'apple-pill': '9999px',
+          },
+          boxShadow: {
+            'apple-soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
+            'apple-hover': '0 12px 30px rgba(0, 0, 0, 0.08)',
+            'product-drop': 'rgba(0, 0, 0, 0.15) 0px 8px 24px',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, Pretendard, sans-serif;
+      background-color: #f5f5f7;
+      color: #1d1d1f;
+      letter-spacing: -0.015em;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .apple-headline {
+      letter-spacing: -0.025em;
+      line-height: 1.08;
+    }
+    /* Apple micro-interaction: subtle scale down on click */
+    .apple-press {
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s ease;
+    }
+    .apple-press:active {
+      transform: scale(0.96);
+      opacity: 0.9;
+    }
+    /* Frosted glass header */
+    .frosted-glass {
+      background-color: rgba(245, 245, 247, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    /* Apple sleek scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d2d2d7;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7a7a7a;
+    }
+  </style>
+</head>
+<body class="bg-[#f5f5f7] text-[#1d1d1f] min-h-screen flex flex-col antialiased selection:bg-[#0066cc] selection:text-white">
+
+  <!-- 1. Apple Global Nav (44px, Surface Black, Ultra-thin) -->
+  <aside class="bg-[#000000] text-white text-[12px] h-11 flex items-center border-b border-[#333333]/50 z-50">
+    <div class="max-w-[1080px] mx-auto px-4 sm:px-6 w-full flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <!-- Apple Icon () -->
+        <a href="index.html" class="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition" title="사내 비품 관리">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.08-7.7-7.93-12-14.54-6.3-9.67-11.49-20.9-15.56-33.7-4.07-12.8-6.11-24.62-6.11-35.47 0-14.24 3.53-26.06 10.59-35.46 7.07-9.4 16.03-14.19 26.88-14.36 4.9.12 10.19 1.33 15.86 3.63 5.67 2.3 9.4 3.52 11.19 3.64 2.01-.12 6.01-1.47 12.01-4.03 6-2.57 11.29-3.73 15.86-3.48 11.95.84 21.46 5.56 28.53 14.17-10.45 6.32-15.57 15.15-15.35 26.49.22 8.82 3.65 16.14 10.3 21.96 6.64 5.82 14.3 9.07 22.97 9.77-2.39 7.42-5.49 15.42-9.28 24.01zM119.22 31.84c0-7.39 2.66-14.28 7.97-20.67 5.32-6.39 12-10.46 20.06-12.21.65 1.52.98 3.15.98 4.9 0 7.39-2.61 14.4-7.83 21.03-5.22 6.63-12.18 10.74-20.89 12.33-.22-1.74-.29-3.53-.29-5.38z" />
+          </svg>
+          <span class="text-[11px] font-normal tracking-normal text-[#d2d2d7]">사내 비품 운영</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-4 text-[11px] text-[#7a7a7a]">
+        <span>2층 창고 키오스크</span>
+        <span>·</span>
+        <button onclick="resetAllData()" class="hover:text-white transition">초기화</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 2. Apple Sub-Nav Frosted (52px, Sticky, Frosted Glass) -->
+  <nav class="frosted-glass border-b border-[#d2d2d7]/60 sticky top-0 z-40">
+    <div class="max-w-[1080px] mx-auto px-4 sm:px-6 h-[52px] flex items-center justify-between gap-4">
+      
+      <!-- Sub-nav Title -->
+      <div class="flex items-center gap-3">
+        <span class="font-display font-semibold text-lg sm:text-xl text-[#1d1d1f] tracking-tight">
+          사내 비품 관리 시스템
+        </span>
+        <span id="lowStockBadge" class="hidden px-2 py-0.5 text-[11px] font-semibold bg-[#d70015] text-white rounded-full">
+          0건 발주 필요
+        </span>
+      </div>
+
+      <!-- Search Input (Apple Pill — 36px, Canvas, Hairline) -->
+      <div class="flex items-center gap-2">
+        <div class="relative w-44 sm:w-64">
+          <input 
+            type="text" 
+            id="searchInput" 
+            oninput="handleSearch()" 
+            placeholder="비품 또는 위치 검색..." 
+            class="w-full pl-8 pr-3 py-1.5 text-xs bg-white text-[#1d1d1f] placeholder-[#7a7a7a] rounded-full border border-[#d2d2d7] focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none transition shadow-2xs"
+          />
+          <svg class="w-3.5 h-3.5 text-[#7a7a7a] absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <button onclick="setFilter('shortage')" id="btnShortageFilter" class="apple-press hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-normal text-[#d70015] hover:text-[#b00010] bg-white rounded-full border border-[#d70015]/40 transition shadow-2xs">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#d70015]"></span>
+          <span>부족 품목</span>
+          <span id="subnavShortageCount" class="px-1.5 py-0.2 bg-[#d70015] text-white text-[10px] rounded-full font-semibold">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 3. Apple Hero Section (Edge-to-Edge White Canvas, 56px SF Pro Display) -->
+  <section class="bg-white border-b border-[#d2d2d7]/50 pt-16 pb-12 sm:pt-20 sm:pb-16 text-center">
+    <div class="max-w-[760px] mx-auto px-4">
+      <!-- Hero Display Headline -->
+      <h1 class="apple-headline font-display font-semibold text-4xl sm:text-5xl lg:text-6xl text-[#1d1d1f]">
+        사내 비품 관리 시스템
+      </h1>
+      <p class="text-base sm:text-lg text-[#7a7a7a] mt-3 font-normal leading-relaxed max-w-lg mx-auto">
+        물품을 가져가실 때 <strong class="text-[#0066cc] font-semibold">[-1 가져감]</strong> 버튼을 누르시면 안전 재고가 실시간으로 관리됩니다.
+      </p>
+
+      <!-- Action Blue Pill CTA row -->
+      <div class="mt-6 flex items-center justify-center gap-3">
+        <a href="#suppliesGrid" class="apple-press px-5 py-2.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-normal transition shadow-2xs">
+          비품 목록 보기
+        </a>
+        <button onclick="resetAllData()" class="apple-press px-5 py-2.5 rounded-full bg-[#f5f5f7] hover:bg-[#e0e0e0] text-[#0066cc] text-sm font-normal border border-[#d2d2d7] transition">
+          초기 데이터 리셋
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Location Filter Chips (Pill Chips, Apple Style) -->
+  <section class="bg-[#f5f5f7] border-b border-[#d2d2d7]/50 sticky top-[52px] z-30">
+    <div class="max-w-[1080px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 overflow-x-auto">
+      <div class="flex items-center gap-2 shrink-0" id="filterChipsContainer">
+        <!-- 전체 탭 -->
+        <button onclick="setFilter('all')" data-filter="all" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-[#1d1d1f] text-white transition">
+          전체 (<span id="chipAllCount">15</span>)
+        </button>
+        <!-- 부족 품목 전용 탭 -->
+        <button onclick="setFilter('shortage')" data-filter="shortage" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#d70015] border border-[#d70015]/40 hover:border-[#d70015] transition flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#d70015]" id="chipShortageDot"></span>
+          <span>부족 품목</span>
+          <span id="chipShortageCount" class="px-1.5 py-0.2 bg-[#d70015] text-white text-[10px] rounded-full font-semibold">0</span>
+        </button>
+        <!-- 위치별 탭 -->
+        <button onclick="setFilter('2층 창고')" data-filter="2층 창고" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition">
+          2층 창고
+        </button>
+        <button onclick="setFilter('경영지원팀 캐비닛')" data-filter="경영지원팀 캐비닛" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition">
+          경영지원팀 캐비닛
+        </button>
+        <button onclick="setFilter('탕비실 하부장')" data-filter="탕비실 하부장" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition">
+          탕비실 하부장
+        </button>
+        <button onclick="setFilter('2층 복합기 옆')" data-filter="2층 복합기 옆" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition">
+          2층 복합기 옆
+        </button>
+        <button onclick="setFilter('1층 현장창고')" data-filter="1층 현장창고" class="apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition">
+          1층 현장창고
+        </button>
+      </div>
+
+      <span class="text-xs text-[#7a7a7a] hidden md:inline shrink-0" id="itemCountLabel">
+        15개 품목
+      </span>
+    </div>
+  </section>
+
+  <!-- 5. Apple Store Utility Card Grid (18px radius, Pure White, Whisper-soft border) -->
+  <main class="max-w-[1080px] mx-auto px-4 sm:px-6 py-10 w-full flex-1" id="suppliesGrid">
+    <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 동적 카드 렌더링 -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-24 text-center">
+      <div class="text-4xl mb-3">🔍</div>
+      <h3 class="font-display font-semibold text-lg text-[#1d1d1f]">일치하는 비품이 없습니다</h3>
+      <p class="text-xs text-[#7a7a7a] mt-1 max-w-sm mx-auto">
+        검색어를 확인하시거나 상단의 위치 필터를 '전체'로 변경해 보세요.
+      </p>
+      <button onclick="setFilter('all'); document.getElementById('searchInput').value=''; handleSearch();" class="apple-press mt-5 px-4 py-2 text-xs font-normal text-[#0066cc] bg-white border border-[#d2d2d7] rounded-full">
+        필터 초기화
+      </button>
+    </div>
+  </main>
+
+  <!-- 6. Apple Parchment Footer (64px padding, 12px fine-print, relaxed leading) -->
+  <footer class="bg-[#f5f5f7] border-t border-[#d2d2d7]/60 py-12 text-xs text-[#7a7a7a] leading-relaxed">
+    <div class="max-w-[1080px] mx-auto px-4 sm:px-6">
+      <div class="pb-6 border-b border-[#d2d2d7]/50 space-y-1 text-[11px]">
+        <p>* 비품 재고 데이터는 웹 브라우저의 로컬 스토리지에 즉시 동기화되어 별도의 서버 통신 없이 안전하게 보관됩니다.</p>
+        <p>* 최소 안전 재고 이하로 내려간 품목은 자동으로 상단에 알림이 표시됩니다.</p>
+      </div>
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px]">
+        <span>저작권 © 2026 사내 비품 재고 관리 키오스크. 모든 권리 보유.</span>
+        <div class="flex items-center gap-4 text-[#1d1d1f]">
+          <button onclick="resetAllData()" class="hover:text-[#0066cc] underline">데이터 전체 리셋</button>
+          <span>·</span>
+          <a href="index.html" class="hover:text-[#0066cc] underline">포털 메인</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 7. Apple Translucent Pill Toast (Frosted Glass at Bottom Center) -->
+  <div id="appleToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#1d1d1f]/85 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-lg text-xs font-normal opacity-0 transition-opacity duration-200 pointer-events-none z-50 flex items-center gap-2 border border-white/10">
+    <span id="toastIcon"></span>
+    <span id="toastMessage">수량이 변경되었습니다</span>
+  </div>
+
+  <script>
+    // PRD 기본 15종 비품 데이터
+    const INITIAL_SUPPLIES = [
+      { id: 1, name: "A4 용지(80g)", unit: "박스", stock: 2, min: 5, location: "2층 창고 선반A", category: "용지" },
+      { id: 2, name: "A3 용지", unit: "박스", stock: 1, min: 1, location: "2층 창고 선반A", category: "용지" },
+      { id: 3, name: "마스킹테이프 24mm", unit: "개", stock: 6, min: 20, location: "2층 창고 선반C", category: "현장소모품" },
+      { id: 4, name: "커터칼 날", unit: "통", stock: 3, min: 5, location: "2층 창고 선반C", category: "현장소모품" },
+      { id: 5, name: "검정 볼펜", unit: "자루", stock: 48, min: 30, location: "경영지원팀 캐비닛", category: "필기구" },
+      { id: 6, name: "형광펜", unit: "자루", stock: 12, min: 10, location: "경영지원팀 캐비닛", category: "필기구" },
+      { id: 7, name: "포스트잇 76x76", unit: "묶음", stock: 9, min: 10, location: "경영지원팀 캐비닛", category: "사무소모품" },
+      { id: 8, name: "프린터 토너(검정)", unit: "개", stock: 1, min: 2, location: "2층 복합기 옆", category: "프린터소모품" },
+      { id: 9, name: "프린터 토너(컬러 3종)", unit: "세트", stock: 1, min: 1, location: "2층 복합기 옆", category: "프린터소모품" },
+      { id: 10, name: "클리어파일 A4", unit: "개", stock: 35, min: 20, location: "경영지원팀 캐비닛", category: "사무소모품" },
+      { id: 11, name: "종이컵 6.5oz", unit: "줄", stock: 4, min: 6, location: "탕비실 하부장", category: "탕비실" },
+      { id: 12, name: "믹스커피", unit: "박스", stock: 1, min: 2, location: "탕비실 하부장", category: "탕비실" },
+      { id: 13, name: "물티슈", unit: "팩", stock: 10, min: 5, location: "탕비실 하부장", category: "탕비실" },
+      { id: 14, name: "건전지 AA", unit: "개", stock: 8, min: 10, location: "경영지원팀 캐비닛", category: "공용" },
+      { id: 15, name: "안전모", unit: "개", stock: 7, min: 5, location: "1층 현장창고", category: "현장안전" }
+    ];
+
+    const STORAGE_KEY = 'apple_supplies_store_v1';
+    let inventory = [];
+    let currentFilter = 'all';
+    let shortageOnly = false;
+
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          inventory = JSON.parse(saved);
+        } catch (e) {
+          inventory = JSON.parse(JSON.stringify(INITIAL_SUPPLIES));
+        }
+      } else {
+        inventory = JSON.parse(JSON.stringify(INITIAL_SUPPLIES));
+        saveData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+    }
+
+    // 재고 수량 조절
+    function changeStock(id, delta) {
+      const item = inventory.find(i => i.id === id);
+      if (!item) return;
+
+      const newStock = Math.max(0, item.stock + delta);
+      if (newStock === item.stock && delta < 0) {
+        showToast(`재고가 이미 0개입니다: ${item.name}`, '⚠️');
+        return;
+      }
+
+      item.stock = newStock;
+      saveData();
+      render();
+
+      if (delta < 0) {
+        showToast(`${item.name} 1${item.unit} 출고 (잔여: ${item.stock}${item.unit})`, '📦');
+      } else {
+        showToast(`${item.name} 1${item.unit} 입고 (현재: ${item.stock}${item.unit})`, '✓');
+      }
+    }
+
+    function resetAllData() {
+      if (confirm('모든 비품의 수량을 초기 상태로 되돌리시겠습니까?')) {
+        inventory = JSON.parse(JSON.stringify(INITIAL_SUPPLIES));
+        saveData();
+        render();
+        showToast('모든 데이터가 초기화되었습니다', '');
+      }
+    }
+
+    function setFilter(type) {
+      currentFilter = type;
+
+      // 상단 서브내비 부족 품목 버튼 상태 업데이트
+      const btnSubnavShortage = document.getElementById('btnShortageFilter');
+      if (btnSubnavShortage) {
+        if (type === 'shortage') {
+          btnSubnavShortage.className = 'apple-press hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#d70015] rounded-full transition shadow-2xs';
+          const dot = btnSubnavShortage.querySelector('span:first-child');
+          if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-white';
+          const cnt = document.getElementById('subnavShortageCount');
+          if (cnt) cnt.className = 'px-1.5 py-0.2 bg-white text-[#d70015] text-[10px] rounded-full font-bold';
+        } else {
+          btnSubnavShortage.className = 'apple-press hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-normal text-[#d70015] hover:text-[#b00010] bg-white rounded-full border border-[#d70015]/40 transition shadow-2xs';
+          const dot = btnSubnavShortage.querySelector('span:first-child');
+          if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-[#d70015]';
+          const cnt = document.getElementById('subnavShortageCount');
+          if (cnt) cnt.className = 'px-1.5 py-0.2 bg-[#d70015] text-white text-[10px] rounded-full font-semibold';
+        }
+      }
+
+      // 필터 탭 활성화 클래스 적용
+      document.querySelectorAll('#filterChipsContainer .apple-chip').forEach(chip => {
+        const val = chip.getAttribute('data-filter');
+        if (val === type) {
+          if (val === 'shortage') {
+            chip.className = 'apple-chip apple-press px-3.5 py-1.5 text-xs font-semibold rounded-full bg-[#d70015] text-white transition flex items-center gap-1.5 shadow-2xs';
+            const dot = chip.querySelector('#chipShortageDot');
+            if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-white';
+            const cnt = chip.querySelector('#chipShortageCount');
+            if (cnt) cnt.className = 'px-1.5 py-0.2 bg-white text-[#d70015] text-[10px] rounded-full font-bold';
+          } else {
+            chip.className = 'apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-[#1d1d1f] text-white transition';
+          }
+        } else {
+          if (val === 'shortage') {
+            chip.className = 'apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#d70015] border border-[#d70015]/40 hover:border-[#d70015] transition flex items-center gap-1.5';
+            const dot = chip.querySelector('#chipShortageDot');
+            if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-[#d70015]';
+            const cnt = chip.querySelector('#chipShortageCount');
+            if (cnt) cnt.className = 'px-1.5 py-0.2 bg-[#d70015] text-white text-[10px] rounded-full font-semibold';
+          } else {
+            chip.className = 'apple-chip apple-press px-3.5 py-1.5 text-xs font-normal rounded-full bg-white text-[#1d1d1f] border border-[#d2d2d7] hover:border-[#7a7a7a] transition';
+          }
+        }
+      });
+      render();
+    }
+
+    function handleSearch() {
+      render();
+    }
+
+    function render() {
+      const keyword = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const grid = document.getElementById('cardsGrid');
+      const emptyState = document.getElementById('emptyState');
+
+      // 재고 부족 품목 계산
+      const shortageList = inventory.filter(i => i.stock <= i.min);
+      const lowStockBadge = document.getElementById('lowStockBadge');
+      if (shortageList.length > 0) {
+        lowStockBadge.classList.remove('hidden');
+        lowStockBadge.textContent = `${shortageList.length}건 발주 필요`;
+      } else {
+        lowStockBadge.classList.add('hidden');
+      }
+
+      // 탭 카운트 배지 동기화
+      const chipAllCount = document.getElementById('chipAllCount');
+      if (chipAllCount) chipAllCount.textContent = inventory.length;
+
+      const chipShortageCount = document.getElementById('chipShortageCount');
+      if (chipShortageCount) chipShortageCount.textContent = shortageList.length;
+
+      const subnavShortageCount = document.getElementById('subnavShortageCount');
+      if (subnavShortageCount) subnavShortageCount.textContent = shortageList.length;
+
+      // 필터링
+      let filtered = inventory.filter(item => {
+        if (currentFilter === 'shortage') {
+          if (item.stock > item.min) return false;
+        } else if (currentFilter !== 'all' && !item.location.includes(currentFilter)) {
+          return false;
+        }
+        if (keyword) {
+          const matchName = item.name.toLowerCase().includes(keyword);
+          const matchLoc = item.location.toLowerCase().includes(keyword);
+          const matchCat = (item.category || '').toLowerCase().includes(keyword);
+          if (!matchName && !matchLoc && !matchCat) return false;
+        }
+        return true;
+      });
+
+      const label = document.getElementById('itemCountLabel');
+      if (label) {
+        label.textContent = currentFilter === 'shortage' 
+          ? `부족 품목 ${filtered.length}개 표시 중` 
+          : `${filtered.length}개 품목`;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        if (currentFilter === 'shortage') {
+          emptyState.innerHTML = `
+            <div class="text-4xl mb-3">✓</div>
+            <h3 class="font-display font-semibold text-lg text-[#1b873f]">부족한 비품이 없습니다</h3>
+            <p class="text-xs text-[#7a7a7a] mt-1 max-w-sm mx-auto">모든 비품의 재고가 최소 안전 수량 이상으로 충분하게 유지되고 있습니다.</p>
+            <button onclick="setFilter('all')" class="apple-press mt-5 px-4 py-2 text-xs font-normal text-[#0066cc] bg-white border border-[#d2d2d7] rounded-full">
+              전체 비품 보기
+            </button>
+          `;
+        } else {
+          emptyState.innerHTML = `
+            <div class="text-4xl mb-3">🔍</div>
+            <h3 class="font-display font-semibold text-lg text-[#1d1d1f]">일치하는 비품이 없습니다</h3>
+            <p class="text-xs text-[#7a7a7a] mt-1 max-w-sm mx-auto">검색어를 확인하시거나 상단의 위치 필터를 '전체'로 변경해 보세요.</p>
+            <button onclick="setFilter('all'); document.getElementById('searchInput').value=''; handleSearch();" class="apple-press mt-5 px-4 py-2 text-xs font-normal text-[#0066cc] bg-white border border-[#d2d2d7] rounded-full">
+              필터 초기화
+            </button>
+          `;
+        }
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = '';
+
+      filtered.forEach(item => {
+        const isShort = item.stock <= item.min;
+        const isOut = item.stock === 0;
+
+        const card = document.createElement('div');
+        // Apple Store Utility Card: rounded-[18px], bg-white, subtle border, no heavy drop-shadow
+        card.className = `rounded-[18px] bg-white p-6 border transition flex flex-col justify-between shadow-2xs hover:shadow-apple-hover ${
+          isOut 
+            ? 'border-[#d70015] ring-1 ring-[#d70015]' 
+            : isShort 
+              ? 'border-[#ff9500]/60' 
+              : 'border-[#d2d2d7]/60 hover:border-[#d2d2d7]'
+        }`;
+
+        let icon = '📦';
+        if (item.category === '용지') icon = '📄';
+        else if (item.category === '필기구') icon = '✏️';
+        else if (item.category === '사무소모품') icon = '📎';
+        else if (item.category === '프린터소모품') icon = '🖨️';
+        else if (item.category === '탕비실') icon = '☕';
+        else if (item.category === '현장소모품') icon = '🔧';
+        else if (item.category === '현장안전') icon = '🦺';
+        else if (item.category === '공용') icon = '🔋';
+
+        card.innerHTML = `
+          <div>
+            <!-- Upper Stage Box (Parchment background, 12px radius) -->
+            <div class="bg-[#f5f5f7] rounded-xl p-6 flex flex-col items-center justify-center text-center relative mb-4">
+              <span class="text-4xl mb-1">${icon}</span>
+              <span class="text-[11px] text-[#7a7a7a] font-normal tracking-wide">${item.category}</span>
+              
+              <!-- Location pill badge -->
+              <span class="absolute top-2.5 left-2.5 text-[10px] font-normal text-[#1d1d1f] bg-white px-2 py-0.5 rounded-full border border-[#d2d2d7]/50 shadow-2xs">
+                ${item.location}
+              </span>
+
+              <!-- Status Tag -->
+              <div class="absolute top-2.5 right-2.5">
+                ${
+                  isOut
+                    ? '<span class="text-[10px] font-medium text-white bg-[#d70015] px-2 py-0.5 rounded-full">품절</span>'
+                    : isShort
+                      ? '<span class="text-[10px] font-medium text-white bg-[#ff9500] px-2 py-0.5 rounded-full">발주 필요</span>'
+                      : '<span class="text-[10px] font-medium text-[#1b873f] bg-white px-2 py-0.5 rounded-full border border-[#d2d2d7]/50">여유</span>'
+                }
+              </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="px-1">
+              <span class="text-[12px] font-normal text-[#7a7a7a] block mb-0.5">
+                최소 권장: ${item.min}${item.unit}
+              </span>
+              <h3 class="font-display font-semibold text-lg text-[#1d1d1f] tracking-tight leading-snug">
+                ${item.name}
+              </h3>
+
+              <!-- Current Stock display -->
+              <div class="flex items-baseline justify-between mt-3 pt-3 border-t border-[#f5f5f7]">
+                <span class="text-[12px] text-[#7a7a7a]">현재 잔여</span>
+                <div class="flex items-baseline gap-1">
+                  <span class="font-display font-semibold text-3xl tracking-tight ${isShort ? 'text-[#d70015]' : 'text-[#1d1d1f]'}">
+                    ${item.stock}
+                  </span>
+                  <span class="text-xs text-[#7a7a7a] font-normal">${item.unit}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Action Blue Pill Buttons -->
+          <div class="mt-5 pt-2 grid grid-cols-2 gap-2">
+            <!-- -1 가져감 (Action Blue or Red if low stock) -->
+            <button 
+              onclick="changeStock(${item.id}, -1)" 
+              class="apple-press h-10 rounded-full font-normal text-xs flex items-center justify-center gap-1.5 transition ${
+                isShort 
+                  ? 'bg-[#d70015] hover:bg-[#b00010] text-white shadow-2xs' 
+                  : 'bg-[#0066cc] hover:bg-[#0071e3] text-white shadow-2xs'
+              }"
+            >
+              <span class="font-semibold text-sm">-1</span>
+              <span>가져감</span>
+            </button>
+            
+            <!-- +1 채워넣음 (Secondary Pearl Capsule / Ghost Pill) -->
+            <button 
+              onclick="changeStock(${item.id}, 1)" 
+              class="apple-press h-10 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#0066cc] font-normal text-xs border border-[#d2d2d7] flex items-center justify-center gap-1.5 transition"
+            >
+              <span class="font-semibold text-sm">+1</span>
+              <span>채워넣음</span>
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Apple Toast
+    let toastTimer = null;
+    function showToast(message, icon = '') {
+      const toast = document.getElementById('appleToast');
+      const msg = document.getElementById('toastMessage');
+      const ic = document.getElementById('toastIcon');
+
+      msg.textContent = message;
+      ic.textContent = icon;
+
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 1800);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      render();
+    });
+  </script>
+</body>
+</html>

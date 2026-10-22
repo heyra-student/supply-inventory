@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사내 비품 재고 관리 키오스크</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* 스크롤바 커스텀 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* 클릭 애니메이션 */
+    .btn-press:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col antialiased selection:bg-blue-200">
+
+  <!-- 1. 상단 글로벌 네비게이션 헤더 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-20">
+        <!-- 타이틀 & 키오스크 안내 -->
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-200">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-black tracking-tight text-slate-900">비품 재고 관리 키오스크</h1>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                2층 창고
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">물품을 꺼내가실 때 해당 품목의 <strong class="text-rose-600 font-bold">[-1]</strong> 버튼을 꼭 눌러주세요</p>
+          </div>
+        </div>
+
+        <!-- 실시간 시계 & 총무 관리 도구 -->
+        <div class="flex items-center gap-3 sm:gap-4">
+          <!-- 디지털 시계 -->
+          <div class="hidden md:flex flex-col items-end px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-600">
+            <span id="currentDate" class="text-xs font-semibold text-slate-500">2026-09-22</span>
+            <span id="currentTime" class="text-sm font-black text-slate-800 tabular-nums">00:00:00</span>
+          </div>
+
+          <!-- CSV 다운로드 버튼 -->
+          <button id="btnExportCsv" onclick="exportToCsv()" class="btn-press flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-sm transition-colors cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="hidden sm:inline">재고 대장 다운로드</span>
+            <span class="sm:hidden">CSV</span>
+          </button>
+
+          <!-- 데이터 초기화 버튼 -->
+          <button onclick="resetToInitialData()" title="최초 비품대장 데이터로 리셋" class="btn-press p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" aria-label="초기 데이터로 리셋">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 긴급 발주 필요 상단 알림 배너 (현재수량 <= 최소수량 품목 존재 시 노출) -->
+  <div id="urgentAlertBanner" class="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-md transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 text-white font-bold text-lg animate-pulse">
+            🚨
+          </span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-base tracking-tight">발주 필요 사전 경고</span>
+              <span id="urgentCountBadge" class="bg-white text-red-700 text-xs font-black px-2 py-0.5 rounded-full">
+                0건
+              </span>
+            </div>
+            <p id="urgentSummaryText" class="text-xs text-red-100 mt-0.5">최소 수량 이하로 떨어진 품목이 있습니다. 총무팀 발주가 필요합니다.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 self-end sm:self-center">
+          <button id="btnToggleUrgentOnly" onclick="toggleUrgentFilter()" class="btn-press px-3.5 py-1.5 bg-white text-red-700 hover:bg-red-50 text-xs font-black rounded-lg shadow transition-colors flex items-center gap-1.5">
+            <span id="urgentFilterBtnText">발주 필요 품목만 모아보기</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 3. 컨트롤 패널 (검색 + 카테고리 필터 + 상태 요약) -->
+    <section class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+      <!-- 상단: 검색창 및 상태 카운터 -->
+      <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        <!-- 검색 인풋 -->
+        <div class="relative flex-1 max-w-lg">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="품목명, 보관 위치, 거래처 검색... (예: A4, 탕비실, 테이프)" 
+            oninput="handleSearch(this.value)"
+            class="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-base transition-all"
+          >
+          <button id="btnClearSearch" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 실시간 재고 상태 요약 지표 -->
+        <div class="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 md:pb-0">
+          <div class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+            <span class="text-slate-500 font-medium">전체 품목:</span>
+            <span id="statTotalItems" class="font-extrabold text-slate-800 text-sm">15개</span>
+          </div>
+          <div class="flex items-center gap-2 px-3.5 py-2 bg-red-50 rounded-xl border border-red-200 text-xs">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span class="text-red-700 font-medium">발주 필요:</span>
+            <span id="statUrgentItems" class="font-extrabold text-red-700 text-sm">0개</span>
+          </div>
+          <div class="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="text-emerald-700 font-medium">재고 정상:</span>
+            <span id="statSafeItems" class="font-extrabold text-emerald-700 text-sm">0개</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단: 카테고리 필터 태그 목록 -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar text-sm" id="categoryChips">
+        <!-- JS로 동적 렌더링 -->
+      </div>
+    </section>
+
+    <!-- 4. 비품 품목 카드 그리드 -->
+    <section>
+      <!-- 품목이 없을 때 표시 -->
+      <div id="emptyState" class="hidden py-16 text-center bg-white rounded-2xl border border-slate-200">
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="text-lg font-bold text-slate-700">검색 또는 필터 조건에 일치하는 품목이 없습니다.</p>
+        <p class="text-sm text-slate-400 mt-1">검색어를 지우거나 다른 카테고리를 선택해 보세요.</p>
+        <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold">
+          전체 목록 보기
+        </button>
+      </div>
+
+      <!-- 카드 그리드 컨테이너 -->
+      <div id="itemGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <!-- JS로 동적 카드 생성 -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 토스트 알림 메시지 (원클릭 조작 피드백) -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- 푸터 -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+      사내 비품 재고 관리 시스템 • 무설치 로컬 구동 (LocalStorage 자동 저장) • 2층 창고 전용
+    </div>
+  </footer>
+
+  <!-- 애플리케이션 핵심 스크립트 -->
+  <script>
+    // ----------------------------------------------------
+    // 1. 초기 데이터셋 (비품대장_2026-09.csv 15종 완벽 반영)
+    // ----------------------------------------------------
+    const INITIAL_INVENTORY_DATA = [
+      {
+        id: "item-1",
+        name: "A4 용지(80g)",
+        category: "용지",
+        unit: "박스",
+        currentQty: 2,
+        minQty: 5,
+        location: "2층 창고 선반A",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-08-20",
+        note: "1박스=2500매"
+      },
+      {
+        id: "item-2",
+        name: "A3 용지",
+        category: "용지",
+        unit: "박스",
+        currentQty: 1,
+        minQty: 1,
+        location: "2층 창고 선반A",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-06-11",
+        note: "설계팀 도면용"
+      },
+      {
+        id: "item-3",
+        name: "마스킹테이프 24mm",
+        category: "현장소모품",
+        unit: "개",
+        currentQty: 6,
+        minQty: 20,
+        location: "2층 창고 선반C",
+        vendor: "한샘자재센터",
+        lastOrderDate: "2026-08-02",
+        note: "시공팀 현장용"
+      },
+      {
+        id: "item-4",
+        name: "커터칼 날",
+        category: "현장소모품",
+        unit: "통",
+        currentQty: 3,
+        minQty: 5,
+        location: "2층 창고 선반C",
+        vendor: "다이소",
+        lastOrderDate: "2026-07-15",
+        note: ""
+      },
+      {
+        id: "item-5",
+        name: "검정 볼펜",
+        category: "필기구",
+        unit: "자루",
+        currentQty: 48,
+        minQty: 30,
+        location: "경영지원팀 캐비닛",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-07-30",
+        note: ""
+      },
+      {
+        id: "item-6",
+        name: "형광펜",
+        category: "필기구",
+        unit: "자루",
+        currentQty: 12,
+        minQty: 10,
+        location: "경영지원팀 캐비닛",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-07-30",
+        note: ""
+      },
+      {
+        id: "item-7",
+        name: "포스트잇 76x76",
+        category: "사무소모품",
+        unit: "묶음",
+        currentQty: 9,
+        minQty: 10,
+        location: "경영지원팀 캐비닛",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-08-20",
+        note: ""
+      },
+      {
+        id: "item-8",
+        name: "프린터 토너(검정)",
+        category: "프린터",
+        unit: "개",
+        currentQty: 1,
+        minQty: 2,
+        location: "2층 복합기 옆",
+        vendor: "캐논서비스",
+        lastOrderDate: "2026-08-28",
+        note: "2층 복합기 전용 모델"
+      },
+      {
+        id: "item-9",
+        name: "프린터 토너(컬러 3종)",
+        category: "프린터",
+        unit: "세트",
+        currentQty: 1,
+        minQty: 1,
+        location: "2층 복합기 옆",
+        vendor: "캐논서비스",
+        lastOrderDate: "2026-05-02",
+        note: ""
+      },
+      {
+        id: "item-10",
+        name: "클리어파일 A4",
+        category: "사무소모품",
+        unit: "개",
+        currentQty: 35,
+        minQty: 20,
+        location: "경영지원팀 캐비닛",
+        vendor: "오피스디포",
+        lastOrderDate: "2026-06-11",
+        note: ""
+      },
+      {
+        id: "item-11",
+        name: "종이컵 6.5oz",
+        category: "탕비실",
+        unit: "줄",
+        currentQty: 4,
+        minQty: 6,
+        location: "탕비실 하부장",
+        vendor: "쿠팡",
+        lastOrderDate: "2026-09-01",
+        note: "1줄=50개"
+      },
+      {
+        id: "item-12",
+        name: "믹스커피",
+        category: "탕비실",
+        unit: "박스",
+        currentQty: 1,
+        minQty: 2,
+        location: "탕비실 하부장",
+        vendor: "쿠팡",
+        lastOrderDate: "2026-09-01",
+        note: "1박스=100개 / 대표님 손님용은 따로(원두)"
+      },
+      {
+        id: "item-13",
+        name: "물티슈",
+        category: "탕비실",
+        unit: "팩",
+        currentQty: 10,
+        minQty: 5,
+        location: "탕비실 하부장",
+        vendor: "쿠팡",
+        lastOrderDate: "2026-09-01",
+        note: ""
+      },
+      {
+        id: "item-14",
+        name: "건전지 AA",
+        category: "공용",
+        unit: "개",
+        currentQty: 8,
+        minQty: 10,
+        location: "경영지원팀 캐비닛",
+        vendor: "다이소",
+        lastOrderDate: "2026-04-20",
+        note: ""
+      },
+      {
+        id: "item-15",
+        name: "안전모",
+        category: "현장안전",
+        unit: "개",
+        currentQty: 7,
+        minQty: 5,
+        location: "1층 현장창고",
+        vendor: "세이프티몰",
+        lastOrderDate: "2026-03-15",
+        note: ""
+      }
+    ];
+
+    const STORAGE_KEY = 'QUIOSK_INVENTORY_ITEMS_V1';
+
+    // 앱 상태
+    let inventory = [];
+    let activeCategory = 'ALL';
+    let searchQuery = '';
+    let showUrgentOnly = false;
+
+    // ----------------------------------------------------
+    // 2. 초기화 및 LocalStorage 핸들링
+    // ----------------------------------------------------
+    function initApp() {
+      loadInventory();
+      renderCategoryChips();
+      renderApp();
+      startClock();
+    }
+
+    function loadInventory() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          inventory = JSON.parse(stored);
+        } else {
+          // 최초 실행 시 기본 데이터 탑재
+          inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY_DATA));
+          saveInventory();
+        }
+      } catch (err) {
+        console.error('LocalStorage 로드 실패:', err);
+        inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY_DATA));
+      }
+    }
+
+    function saveInventory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+      } catch (err) {
+        console.error('LocalStorage 저장 실패:', err);
+      }
+    }
+
+    function resetToInitialData() {
+      if (confirm('기본 비품 대장의 15개 초기 데이터로 재설정하시겠습니까?\n(현재 수정된 수량은 초기화됩니다)')) {
+        inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY_DATA));
+        saveInventory();
+        showToast('초기 비품 대장 15종 데이터로 복원되었습니다.', 'info');
+        renderApp();
+      }
+    }
+
+    // ----------------------------------------------------
+    // 3. 수량 차감 [-1] & 복구 [+1] 핵심 비즈니스 로직
+    // ----------------------------------------------------
+    function changeQuantity(itemId, delta) {
+      const item = inventory.find(i => i.id === itemId);
+      if (!item) return;
+
+      if (delta < 0 && item.currentQty <= 0) {
+        showToast(`[${item.name}] 재고가 이미 0입니다.`, 'warning');
+        return;
+      }
+
+      item.currentQty = Math.max(0, item.currentQty + delta);
+      saveInventory();
+      renderApp();
+
+      if (delta < 0) {
+        showToast(`'${item.name}' 1${item.unit} 꺼냄 (잔여: ${item.currentQty}${item.unit})`, 'decrease');
+      } else {
+        showToast(`'${item.name}' 1${item.unit} 보정/추가 (잔여: ${item.currentQty}${item.unit})`, 'increase');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 4. UI 렌더링 파이프라인
+    // ----------------------------------------------------
+    function renderApp() {
+      updateSummaryAndBanner();
+      renderCards();
+    }
+
+    // 상단 배너 및 통계 지표 갱신
+    function updateSummaryAndBanner() {
+      const totalCount = inventory.length;
+      const urgentItems = inventory.filter(i => i.currentQty <= i.minQty);
+      const urgentCount = urgentItems.length;
+      const safeCount = totalCount - urgentCount;
+
+      // 지표 갱신
+      document.getElementById('statTotalItems').textContent = `${totalCount}개`;
+      document.getElementById('statUrgentItems').textContent = `${urgentCount}개`;
+      document.getElementById('statSafeItems').textContent = `${safeCount}개`;
+
+      // 배너 갱신
+      const banner = document.getElementById('urgentAlertBanner');
+      const urgentCountBadge = document.getElementById('urgentCountBadge');
+      const urgentSummaryText = document.getElementById('urgentSummaryText');
+
+      if (urgentCount > 0) {
+        banner.classList.remove('hidden');
+        urgentCountBadge.textContent = `${urgentCount}건`;
+        
+        // 발주 필요 품목 이름 최대 3개 미리보기
+        const previewNames = urgentItems.slice(0, 3).map(i => i.name).join(', ');
+        const extraCount = urgentCount > 3 ? ` 외 ${urgentCount - 3}건` : '';
+        urgentSummaryText.textContent = `발주 대상: ${previewNames}${extraCount} (최소 수량 이하 도달)`;
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // '발주 필요 품목만 모아보기' 버튼 텍스트/스타일
+      const urgentBtnText = document.getElementById('urgentFilterBtnText');
+      if (showUrgentOnly) {
+        urgentBtnText.textContent = '전체 품목 보기';
+      } else {
+        urgentBtnText.textContent = '발주 필요 품목만 모아보기';
+      }
+    }
+
+    // 카테고리 칩 렌더링
+    function renderCategoryChips() {
+      const categories = ['ALL', '용지', '현장소모품', '필기구', '사무소모품', '프린터', '탕비실', '공용', '현장안전'];
+      const container = document.getElementById('categoryChips');
+      container.innerHTML = '';
+
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        const isActive = activeCategory === cat && !showUrgentOnly;
+        btn.className = `px-3.5 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer text-xs sm:text-sm ${
+          isActive 
+            ? 'bg-blue-600 text-white shadow-sm' 
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        }`;
+        btn.textContent = cat === 'ALL' ? '전체 품목' : cat;
+        btn.onclick = () => {
+          activeCategory = cat;
+          showUrgentOnly = false;
+          renderCategoryChips();
+          renderApp();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    // 카드 그리드 렌더링
+    function renderCards() {
+      const grid = document.getElementById('itemGrid');
+      const emptyState = document.getElementById('emptyState');
+      grid.innerHTML = '';
+
+      // 필터링 적용
+      let filtered = inventory.filter(item => {
+        // 긴급 발주 필터
+        if (showUrgentOnly && item.currentQty > item.minQty) {
+          return false;
+        }
+        // 카테고리 필터
+        if (!showUrgentOnly && activeCategory !== 'ALL' && item.category !== activeCategory) {
+          return false;
+        }
+        // 검색어 필터
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchName = item.name.toLowerCase().includes(q);
+          const matchLoc = item.location.toLowerCase().includes(q);
+          const matchVendor = item.vendor.toLowerCase().includes(q);
+          const matchCat = item.category.toLowerCase().includes(q);
+          const matchNote = (item.note || '').toLowerCase().includes(q);
+          if (!matchName && !matchLoc && !matchVendor && !matchCat && !matchNote) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      filtered.forEach(item => {
+        const isUrgent = item.currentQty <= item.minQty;
+        const card = document.createElement('div');
+        
+        // 발주 필요 시 붉은색 테두리 및 배경 반전 강조 (PRD 핵심 요구사항)
+        card.className = `relative rounded-2xl p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between ${
+          isUrgent
+            ? 'bg-rose-50/70 border-2 border-red-500 shadow-lg shadow-red-100 ring-1 ring-red-400'
+            : 'bg-white border border-slate-200 shadow-sm hover:shadow-md'
+        }`;
+
+        card.innerHTML = `
+          <!-- 카드 헤더 (뱃지 & 카테고리) -->
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2.5">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
+                isUrgent ? 'bg-red-200 text-red-900' : 'bg-slate-100 text-slate-700'
+              }">
+                ${item.category}
+              </span>
+              ${
+                isUrgent
+                  ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-red-600 text-white shadow-sm animate-pulse">
+                      🚨 발주 필요
+                    </span>`
+                  : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200">
+                      여유
+                    </span>`
+              }
+            </div>
+
+            <!-- 품목명 -->
+            <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-snug break-keep">
+              ${item.name}
+            </h3>
+
+            <!-- 비고 (있을 경우만 표시) -->
+            ${
+              item.note 
+                ? `<p class="text-xs text-slate-500 mt-1 line-clamp-1" title="${item.note}">💡 ${item.note}</p>` 
+                : `<p class="text-xs text-transparent select-none mt-1">-</p>`
+            }
+
+            <!-- 보관 위치 및 거래처 안내 (물품 못 찾는 일 방지) -->
+            <div class="mt-4 pt-3 border-t border-dashed ${isUrgent ? 'border-red-200' : 'border-slate-200'} space-y-1.5 text-xs">
+              <div class="flex items-center text-slate-700">
+                <span class="font-bold w-16 text-slate-400 shrink-0">📍 보관위치</span>
+                <span class="font-black ${isUrgent ? 'text-red-950 bg-red-100/80 px-2 py-0.5 rounded' : 'text-slate-800 bg-slate-100 px-2 py-0.5 rounded'}">
+                  ${item.location}
+                </span>
+              </div>
+              <div class="flex items-center text-slate-500">
+                <span class="font-medium w-16 text-slate-400 shrink-0">🏢 주거래처</span>
+                <span class="font-semibold text-slate-600">${item.vendor}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 카드 중앙: 재고 수량 표시 영역 -->
+          <div class="my-5 py-4 px-4 rounded-xl ${isUrgent ? 'bg-red-100/60 border border-red-200' : 'bg-slate-50 border border-slate-100'} flex items-baseline justify-between">
+            <div>
+              <span class="text-xs font-bold ${isUrgent ? 'text-red-600' : 'text-slate-500'}">현재 재고</span>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span class="text-4xl sm:text-5xl font-black tracking-tight ${isUrgent ? 'text-red-600' : 'text-slate-900'} tabular-nums">
+                  ${item.currentQty}
+                </span>
+                <span class="text-base font-bold ${isUrgent ? 'text-red-600' : 'text-slate-600'}">
+                  ${item.unit}
+                </span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-semibold text-slate-400">최소 기준</span>
+              <div class="text-sm font-black text-slate-600 mt-1 tabular-nums">
+                ${item.minQty} ${item.unit}
+              </div>
+            </div>
+          </div>
+
+          <!-- 카드 하단: 원클릭 극단적 단순 조작 버튼 ([-1] 및 [+1]) -->
+          <div class="grid grid-cols-4 gap-2 pt-1">
+            <!-- 큼직한 [-1] 버튼 (3/4 영역 차지) -->
+            <button 
+              type="button"
+              onclick="changeQuantity('${item.id}', -1)"
+              ${item.currentQty <= 0 ? 'disabled' : ''}
+              class="col-span-3 btn-press flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-lg sm:text-xl transition-all shadow-md cursor-pointer ${
+                item.currentQty <= 0
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                  : isUrgent
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-200 active:bg-red-800'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-200 active:bg-black'
+              }"
+              title="물품 꺼내기 (1개 차감)"
+            >
+              <svg class="w-6 h-6 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" />
+              </svg>
+              <span>-1 ${item.unit} 꺼냄</span>
+            </button>
+
+            <!-- 실수 보정용 [+1] 버튼 (1/4 영역 차지) -->
+            <button 
+              type="button"
+              onclick="changeQuantity('${item.id}', 1)"
+              class="col-span-1 btn-press flex flex-col items-center justify-center py-3 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-300 transition-all cursor-pointer"
+              title="실수로 눌렀을 때 복구 (+1)"
+            >
+              <svg class="w-5 h-5 stroke-[2.5] text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span class="text-[11px] font-semibold mt-0.5 text-slate-500">실수보정</span>
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    // ----------------------------------------------------
+    // 5. 검색 및 필터 핸들러
+    // ----------------------------------------------------
+    function handleSearch(val) {
+      searchQuery = val;
+      const clearBtn = document.getElementById('btnClearSearch');
+      if (val.trim()) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderCards();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      searchQuery = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+      renderCards();
+    }
+
+    function toggleUrgentFilter() {
+      showUrgentOnly = !showUrgentOnly;
+      renderCategoryChips();
+      renderApp();
+    }
+
+    function resetFilters() {
+      searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+      activeCategory = 'ALL';
+      showUrgentOnly = false;
+      renderCategoryChips();
+      renderApp();
+    }
+
+    // ----------------------------------------------------
+    // 6. CSV 대장 내보내기 (Excel 한글 깨짐 방지 UTF-8 BOM 적용)
+    // ----------------------------------------------------
+    function exportToCsv() {
+      try {
+        const headers = ["품목", "분류", "단위", "현재수량", "최소수량", "보관위치", "주 거래처", "마지막 주문일", "비고"];
+        const rows = inventory.map(item => [
+          `"${(item.name || '').replace(/"/g, '""')}"`,
+          `"${(item.category || '').replace(/"/g, '""')}"`,
+          `"${(item.unit || '').replace(/"/g, '""')}"`,
+          item.currentQty,
+          item.minQty,
+          `"${(item.location || '').replace(/"/g, '""')}"`,
+          `"${(item.vendor || '').replace(/"/g, '""')}"`,
+          `"${(item.lastOrderDate || '').replace(/"/g, '""')}"`,
+          `"${(item.note || '').replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = [
+          headers.join(","),
+          ...rows.map(row => row.join(","))
+        ].join("\r\n");
+
+        // UTF-8 BOM (\uFEFF) 추가하여 엑셀에서 바로 열어도 한글이 안 깨지도록 함
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const fileName = `비품대장_${year}-${month}-${day}.csv`;
+
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast(`'${fileName}' 다운로드가 완료되었습니다.`, 'info');
+      } catch (err) {
+        console.error('CSV 생성 오류:', err);
+        showToast('CSV 다운로드 중 오류가 발생했습니다.', 'warning');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 7. 토스트 피드백 시스템
+    // ----------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bgClass = 'bg-slate-900 text-white';
+      let icon = '🔔';
+      if (type === 'decrease') {
+        bgClass = 'bg-slate-900 text-white border-l-4 border-amber-500';
+        icon = '📦';
+      } else if (type === 'increase') {
+        bgClass = 'bg-slate-900 text-white border-l-4 border-blue-500';
+        icon = '↩️';
+      } else if (type === 'warning') {
+        bgClass = 'bg-rose-700 text-white';
+        icon = '⚠️';
+      } else if (type === 'info') {
+        bgClass = 'bg-emerald-700 text-white';
+        icon = '✅';
+      }
+
+      toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold transition-all transform duration-300 translate-y-4 opacity-0 pointer-events-auto ${bgClass}`;
+      toast.innerHTML = `
+        <span class="text-base shrink-0">${icon}</span>
+        <span class="flex-1">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // 애니메이션 노출
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+      });
+
+      // 2.5초 후 자동 소멸
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 2500);
+    }
+
+    // ----------------------------------------------------
+    // 8. 실시간 시계 기능 (키오스크 환경 필수)
+    // ----------------------------------------------------
+    function startClock() {
+      function updateClock() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayStr = days[now.getDay()];
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+
+        const dateEl = document.getElementById('currentDate');
+        const timeEl = document.getElementById('currentTime');
+        if (dateEl) dateEl.textContent = `${y}-${m}-${d} (${dayStr})`;
+        if (timeEl) timeEl.textContent = `${hh}:${mm}:${ss}`;
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    // ----------------------------------------------------
+    // DOM 로드 시 즉시 초기화
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
